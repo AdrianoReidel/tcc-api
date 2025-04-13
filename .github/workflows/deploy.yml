@@ -1,0 +1,100 @@
+name: Nest.js CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Passo 1: Fazer checkout do repositório
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      # Passo 2: Configurar o Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20'
+
+      # Passo 3: Adicionar variáveis de ambiente do GitHub Secrets para gerar o .env
+      - name: Create .env file
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+          echo "PORT=${{ secrets.PORT }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "CLIENT_URL=${{ secrets.CLIENT_URL }}" >> .env
+          echo "IMAGES_PATH=${{ secrets.IMAGES_PATH }}" >> .env
+
+      # Passo 4: Instalar dependências
+      - name: Install dependencies
+        run: npm install
+
+      # Passo 5: Gerar Prisma e rodar o build da aplicação Nest.js
+      - name: Prisma generate and build the project
+        run: |
+          npx prisma generate  # Gera os arquivos do Prisma
+          npm run build         # Faz o build da aplicação
+
+      # Passo 6: Compactar os arquivos para enviar ao servidor
+      - name: Compress files for deployment
+        run: tar -czf build-api.tar.gz dist node_modules package.json package-lock.json prisma .env localhost+1.pem localhost+1-key.pem
+
+      # Passo 7: Enviar os arquivos para o servidor via SCP
+      - name: Deploy to server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H 52.207.72.90 >> ~/.ssh/known_hosts
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_deploy build-api.tar.gz ubuntu@52.207.72.90:/var/www/tcc-api/
+
+      # Passo 8: Descompactar e reiniciar o PM2 no servidor com rollback
+      - name: Unpack and restart on server
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_deploy ubuntu@52.207.72.90 'bash -s' << 'EOF'
+            set -e
+            
+            # Se estiver usando nvm, carregar o ambiente do nvm
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            
+            # Se necessário, ajuste o PATH (exemplo para /usr/local/bin)
+            export PATH="/usr/local/bin:$PATH"
+            
+            cd /var/www/tcc-api
+            
+            # Criar uma pasta temporária para o novo build
+            DEPLOY_DIR="deploy_$(date +%Y%m%d%H%M%S)"
+            mkdir $DEPLOY_DIR
+            
+            # Descompactar nova versão na pasta temporária
+            tar -xzf build-api.tar.gz -C $DEPLOY_DIR
+            
+            # Instalar dependências de produção
+            cd $DEPLOY_DIR
+            npm install --production
+            
+            # Rodar as migrações do Prisma no servidor
+            npx prisma migrate deploy
+            
+            # Criar ou atualizar o link simbólico para o novo build
+            ln -sfn /var/www/tcc-api/$DEPLOY_DIR /var/www/tcc-api/current
+            
+            # Reiniciar a aplicação usando PM2 no novo diretório
+            pm2 delete api || true
+            cd /var/www/tcc-api/current
+            pm2 start dist/src/main.js --name api
+            pm2 save
+            
+            # Limpar deploys antigos (mantendo apenas os 3 mais recentes)
+            cd /var/www/tcc-api
+            ls -dt deploy_* | tail -n +4 | xargs rm -rf
+          EOF
