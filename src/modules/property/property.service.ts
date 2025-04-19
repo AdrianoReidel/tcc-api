@@ -16,7 +16,8 @@ export class PropertyService implements PropertyInterface {
       data: {
         title: createPropertyDto.title,
         description: createPropertyDto.description,
-        pricePerNight: createPropertyDto.pricePerNight,
+        pricePerUnit: createPropertyDto.pricePerUnit,
+        operatingMode: createPropertyDto.operatingMode,
         street: createPropertyDto.street,
         city: createPropertyDto.city,
         state: createPropertyDto.state,
@@ -102,39 +103,6 @@ export class PropertyService implements PropertyInterface {
     await this.prisma.photo.delete({ where: { id: photoId } });
   }
 
-  async addCommodities(propertyId: string, commodityIds: number[]): Promise<void> {
-    await this.verifyExistingProperty(propertyId);
-
-    const relations = commodityIds.map((commodityId) => ({
-      propertyId,
-      commodityId,
-    }));
-
-    await this.prisma.property_commodity.createMany({
-      data: relations,
-      skipDuplicates: true,
-    });
-  }
-
-  async removeCommodities(propertyId: string, commodityIds: number[]): Promise<void> {
-    await this.verifyExistingProperty(propertyId);
-
-    for (const commodityId of commodityIds) {
-      await this.prisma.property_commodity
-        .delete({
-          where: {
-            propertyId_commodityId: {
-              propertyId,
-              commodityId,
-            },
-          },
-        })
-        .catch(() => {
-          // se não existir, ignore ou trate
-        });
-    }
-  }
-
   async getMyProperties(userId: string): Promise<PropertyListDto[]> {
     const properties = await this.prisma.property.findMany({
       where: { hostId: userId },
@@ -150,6 +118,9 @@ export class PropertyService implements PropertyInterface {
       description: prop.description,
       createdAt: prop.createdAt,
       hostId: prop.hostId,
+      pricePerUnit: prop.pricePerUnit.toNumber(),
+      operatingMode: prop.operatingMode,
+      type: prop.type,
     };
   }
 
@@ -165,7 +136,8 @@ export class PropertyService implements PropertyInterface {
       state: prop.state,
       country: prop.country,
       zipCode: prop.zipCode,
-      pricePerNight: prop.pricePerNight.toNumber(),
+      pricePerUnit: prop.pricePerUnit.toNumber(),
+      operatingMode: prop.operatingMode,
       hostId: prop.hostId,
       createdAt: prop.createdAt,
       updatedAt: prop.updatedAt,

@@ -13,6 +13,4 @@ export abstract class PropertyInterface {
   abstract verifyExistingProperty(id: string): Promise<void>;
   abstract addPhotos(propertyId: string, photoUrls: string[]): Promise<void>;
   abstract removePhoto(propertyId: string, photoId: string): Promise<void>;
-  abstract addCommodities(propertyId: string, commodityIds: number[]): Promise<void>;
-  abstract removeCommodities(propertyId: string, commodityIds: number[]): Promise<void>;
-}
+  }

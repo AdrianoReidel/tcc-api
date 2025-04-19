@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { operating_mode } from '@prisma/client';
 
 export class PropertyDto {
   @ApiProperty({ example: 'UUID', description: 'ID da propriedade' })
@@ -13,7 +14,10 @@ export class PropertyDto {
   })
   description: string;
 
-  @ApiProperty({ example: 'APARTMENT', description: 'Tipo da propriedade' })
+  @ApiProperty({
+      example: 'HOUSING',
+      description: 'Tipo da propriedade (HOUSING, EVENTS, SPORTS)',
+    })
   type: string;
 
   @ApiProperty({ example: 'AVAILABLE', description: 'Status da propriedade' })
@@ -34,8 +38,8 @@ export class PropertyDto {
   @ApiProperty({ example: '12345-678', description: 'CEP da propriedade' })
   zipCode: string;
 
-  @ApiProperty({ example: 250.0, description: 'Preço por noite da propriedade' })
-  pricePerNight: number;
+  @ApiProperty({ example: 250.0, description: 'Preço por unidade de aluguel da propriedade' })
+  pricePerUnit: number;
 
   @ApiProperty({ example: 'UUID', description: 'ID do host da propriedade' })
   hostId: string;
@@ -51,4 +55,12 @@ export class PropertyDto {
     description: 'Data de atualização do registro',
   })
   updatedAt: Date;
+
+  @ApiProperty({
+    example: 'PER_NIGHT',
+    description: 'Modo de operação da propriedade. Valores possíveis: PER_NIGHT, PER_HOUR, PER_DAY',
+    required: false,
+    enum: operating_mode,
+  })
+  operatingMode?: operating_mode;
 }

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { operating_mode } from '@prisma/client';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum } from 'class-validator';
 
 export class CreatePropertyDto {
   @ApiProperty({ example: 'Casa de Praia', description: 'Título da propriedade' })
@@ -16,9 +17,9 @@ export class CreatePropertyDto {
   description: string;
 
   @ApiProperty({
-    example: 'APARTMENT',
-    description: 'Tipo da propriedade',
-  })
+     example: 'HOUSING',
+     description: 'Tipo da propriedade (HOUSING, EVENTS, SPORTS)',
+   })
   @IsString()
   @IsNotEmpty({ message: 'O tipo é obrigatório.' })
   type: string;
@@ -56,13 +57,23 @@ export class CreatePropertyDto {
   @IsNotEmpty({ message: 'O CEP é obrigatório.' })
   zipCode: string;
 
-  @ApiProperty({ example: 250.0, description: 'Preço por noite da propriedade' })
+  @ApiProperty({ example: 250.0, description: 'Preço por unidade de aluguel da propriedade' })
   @IsNumber()
-  @IsNotEmpty({ message: 'O preço por noite é obrigatório.' })
-  pricePerNight: number;
+  @IsNotEmpty({ message: 'O preço por unidade é obrigatório.' })
+  pricePerUnit: number;
 
   @ApiProperty({ example: 'UUID', description: 'ID do host da propriedade' })
   @IsString()
   @IsNotEmpty({ message: 'O ID do host é obrigatório.' })
   hostId: string;
+
+  @ApiProperty({
+    example: 'PER_NIGHT',
+    description: 'Modo de operação da propriedade. Valores possíveis: PER_NIGHT, PER_HOUR, PER_DAY',
+    required: false,
+    enum: operating_mode,
+  })
+  @IsOptional()
+  @IsEnum(operating_mode)
+  operatingMode?: operating_mode;
 }

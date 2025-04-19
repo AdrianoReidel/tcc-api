@@ -20,8 +20,8 @@ export class UpdatePropertyDto {
   description?: string;
 
   @ApiPropertyOptional({
-    example: 'APARTMENT',
-    description: 'Tipo da propriedade (HOUSE, APARTMENT, ROOM, OTHER)',
+    example: 'HOUSING',
+    description: 'Tipo da propriedade (HOUSING, EVENTS, SPORTS)',
   })
   @IsEnum(property_type)
   @IsOptional()
@@ -77,9 +77,9 @@ export class UpdatePropertyDto {
 
   @ApiPropertyOptional({
     example: 250.0,
-    description: 'Preço por noite da propriedade',
+    description: 'Preço por unidade de aluguel da propriedade',
   })
   @IsNumber()
   @IsOptional()
-  pricePerNight?: number;
+  pricePerUnit?: number;
 }

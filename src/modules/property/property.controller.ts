@@ -99,45 +99,4 @@ export class PropertyController {
   async removePhoto(@Param('propertyId') propertyId: string, @Param('photoId') photoId: string): Promise<void> {
     await this.propertyService.removePhoto(propertyId, photoId);
   }
-
-  @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
-  @SuccessResponse('Comodidades adicionadas à propriedade.')
-  @ApiOperation({ summary: 'Adiciona comodidades (commodities) a uma propriedade.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        commodityIds: {
-          type: 'array',
-          items: { type: 'number' },
-        },
-      },
-    },
-  })
-  @Post(':id/commodities')
-  async addCommodities(@Param('id') propertyId: string, @Body('commodityIds') commodityIds: number[]): Promise<void> {
-    await this.propertyService.addCommodities(propertyId, commodityIds);
-  }
-
-  @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
-  @SuccessResponse('Comodidades removidas da propriedade.')
-  @ApiOperation({ summary: 'Remove comodidades (commodities) de uma propriedade.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        commodityIds: {
-          type: 'array',
-          items: { type: 'number' },
-        },
-      },
-    },
-  })
-  @Delete(':id/commodities')
-  async removeCommodities(
-    @Param('id') propertyId: string,
-    @Body('commodityIds') commodityIds: number[],
-  ): Promise<void> {
-    await this.propertyService.removeCommodities(propertyId, commodityIds);
-  }
 }

@@ -23,10 +23,9 @@ enum user_role {
 }
 
 enum property_type {
-  HOUSE
-  APARTMENT
-  ROOM
-  OTHER
+  HOUSING
+  EVENTS
+  SPORTS
 }
 
 enum property_status {
@@ -65,6 +64,12 @@ enum invoice_status {
   PENDING
   PAID
   CANCELED
+}
+
+enum operating_mode {
+  PER_NIGHT
+  PER_HOUR
+  PER_DAY
 }
 
 // Usuários do sistema (admins, hóspedes e anfitriões)
@@ -113,25 +118,6 @@ model transaction {
   @@index([userId])
 }
 
-// Amenidades disponíveis nas propriedades (ex.: Wi-Fi, piscina)
-model commodity {
-  id         Int                  @id @default(autoincrement())
-  name       String
-  properties property_commodity[]
-}
-
-// Relaciona propriedades às amenidades (muitos pra muitos)
-model property_commodity {
-  propertyId  String    @map("property_id")
-  commodityId Int       @map("commodity_id")
-  property    property  @relation(fields: [propertyId], references: [id])
-  commodity   commodity @relation(fields: [commodityId], references: [id])
-
-  @@id([propertyId, commodityId])
-  @@index([propertyId])
-  @@index([commodityId])
-}
-
 // Fotos das propriedades
 model photo {
   id         String   @id @default(uuid())
@@ -154,10 +140,10 @@ model property {
   state             String
   country           String
   zipCode           String               @map("zip_code")
-  pricePerNight     Decimal              @map("price_per_night") @db.Decimal(10, 2)
+  pricePerUnit      Decimal              @map("price_per_unit") @db.Decimal(10, 2)
+  operatingMode     operating_mode       
   hostId            String               @map("host_id")
   host              app_user             @relation(fields: [hostId], references: [id])
-  propertyAmenities property_commodity[]
   photos            photo[]
   reservations      reservation[]
   createdAt         DateTime             @default(now()) @map("created_at")
