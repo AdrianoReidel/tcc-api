@@ -128,7 +128,7 @@ model photo {
   @@index([propertyId])
 }
 
-// Propriedades disponíveis pra reserva (casas, apartamentos, etc.)
+// Propriedades e Espaços disponíveis pra reserva (moradias, espaços para eventos, quadras esportivas, etc.)
 model property {
   id                String               @id @default(uuid())
   title             String
