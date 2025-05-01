@@ -63,9 +63,8 @@ export class CreatePropertyDto {
   pricePerUnit: number;
 
   @ApiProperty({ example: 'UUID', description: 'ID do host da propriedade' })
-  @IsString()
-  @IsNotEmpty({ message: 'O ID do host é obrigatório.' })
-  hostId: string;
+  @IsOptional()
+  hostId?: string;
 
   @ApiProperty({
     example: 'PER_NIGHT',

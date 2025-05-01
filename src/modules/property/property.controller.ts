@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Put, Query, UseGuards, Delete, Post, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Put, Query, UseGuards, Delete, Post, Req, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { PropertyInterface } from './property.interface';
 import { SuccessResponse } from 'src/decorators/success-response.decorator';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -33,6 +33,20 @@ export class PropertyController {
   @Get()
   async getAllProperties(@Query('search') search?: string): Promise<PropertyListDto[]> {
     return this.propertyService.getAllProperties(search);
+  }
+
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Buscar propriedades por localização e tipo' })
+  @ApiResponse({ status: 200, description: 'Lista de propriedades filtradas.', type: [PropertyListDto] })
+  @ApiQuery({ name: 'location', required: true, type: String, description: 'Cidade para filtrar as propriedades' })
+  @ApiQuery({ name: 'type', required: true, type: String, description: 'Tipo de propriedade (HOUSING, EVENTS, SPORTS)' })
+  async searchProperties(
+    @Query('location') location: string,
+    @Query('type') type: string,
+  ): Promise<PropertyListDto[]> {
+    return this.propertyService.searchProperties(location, type);
   }
 
   @UseGuards(JwtAuthGuard)

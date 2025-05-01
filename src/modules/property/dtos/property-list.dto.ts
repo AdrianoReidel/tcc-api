@@ -44,4 +44,10 @@ export class PropertyListDto {
     description: 'Tipo da propriedade',
   })
   type: string;
+
+  @ApiProperty({ example: 'Florianópolis', description: 'Cidade da propriedade' })
+  city: string;
+
+  @ApiProperty({ example: 'Santa Catarina', description: 'Estado da propriedade' })
+  state: string;
 }

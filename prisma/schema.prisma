@@ -141,7 +141,7 @@ model property {
   country           String
   zipCode           String               @map("zip_code")
   pricePerUnit      Decimal              @map("price_per_unit") @db.Decimal(10, 2)
-  operatingMode     operating_mode       
+  operatingMode     operating_mode       @map("operating_mode") 
   hostId            String               @map("host_id")
   host              app_user             @relation(fields: [hostId], references: [id])
   photos            photo[]

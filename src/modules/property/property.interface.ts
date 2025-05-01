@@ -9,6 +9,7 @@ export abstract class PropertyInterface {
   abstract deleteProperty(id: string): Promise<void>;
   abstract getMyProperties(userId: string): Promise<PropertyListDto[]>;
   abstract getAllProperties(search?: string): Promise<PropertyListDto[]>;
+  abstract searchProperties(location: string, type: string): Promise<PropertyListDto[]>;
   abstract findById(id: string): Promise<PropertyDto>;
   abstract verifyExistingProperty(id: string): Promise<void>;
   abstract addPhotos(propertyId: string, photoUrls: string[]): Promise<void>;

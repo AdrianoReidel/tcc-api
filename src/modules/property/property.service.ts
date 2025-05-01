@@ -48,6 +48,59 @@ export class PropertyService implements PropertyInterface {
     return properties.map((p) => this.toPropertyListDto(p));
   }
 
+  async searchProperties(location: string, type: string): Promise<PropertyListDto[]> {
+    // Construir a cláusula where com base nos parâmetros
+    const whereClause: any = {};
+
+    // Adicionar filtro por localização (cidade)
+    if (location) {
+      whereClause.city = { contains: location, mode: 'insensitive' };
+    }
+
+    // Adicionar filtro por tipo (HOUSING, EVENTS, SPORTS)
+    if (type) {
+      const validType = type.toUpperCase();
+      if (Object.values(property_type).includes(validType as property_type)) {
+        whereClause.type = validType;
+      } else {
+        throw new Error('Tipo de propriedade inválido. Use HOUSING, EVENTS ou SPORTS.');
+      }
+    }
+    const properties = await this.prisma.property.findMany({
+      where: whereClause,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        createdAt: true,
+        hostId: true,
+        pricePerUnit: true,
+        operatingMode: true,
+        type: true,
+        city: true,
+        state: true,
+      },
+    });
+
+    return properties.map((p) => this.toPropertyListSearchDto(p));
+  }
+
+  private toPropertyListSearchDto(property: any): PropertyListDto {
+    return {
+      id: property.id,
+      title: property.title,
+      description: property.description,
+      createdAt: property.createdAt,
+      hostId: property.hostId,
+      pricePerUnit: property.pricePerUnit,
+      operatingMode: property.operatingMode,
+      type: property.type,
+      city: property.city,
+      state: property.state,
+    };
+  }
+
   async findById(id: string): Promise<PropertyDto> {
     const prop = await this.prisma.property.findUnique({ where: { id } });
     if (!prop) {
@@ -121,6 +174,8 @@ export class PropertyService implements PropertyInterface {
       pricePerUnit: prop.pricePerUnit.toNumber(),
       operatingMode: prop.operatingMode,
       type: prop.type,
+      city: prop.city,
+      state: prop.state,
     };
   }
 
