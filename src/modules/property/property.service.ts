@@ -11,8 +11,9 @@ import { property, property_status, property_type } from '@prisma/client';
 export class PropertyService implements PropertyInterface {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createProperty(createPropertyDto: CreatePropertyDto): Promise<void> {
-    await this.prisma.property.create({
+  async createProperty(createPropertyDto: CreatePropertyDto, imageBuffer: Buffer): Promise<void> {
+    // Criar a propriedade
+    const property = await this.prisma.property.create({
       data: {
         title: createPropertyDto.title,
         description: createPropertyDto.description,
@@ -25,7 +26,15 @@ export class PropertyService implements PropertyInterface {
         zipCode: createPropertyDto.zipCode,
         hostId: createPropertyDto.hostId,
         type: createPropertyDto.type as property_type,
-        status: createPropertyDto.status as property_status,
+        status: (createPropertyDto.status || 'AVAILABLE') as property_status,
+      },
+    });
+
+    // Criar o registro na tabela photo com o buffer da imagem
+    await this.prisma.photo.create({
+      data: {
+        data: imageBuffer,
+        propertyId: property.id,
       },
     });
   }
@@ -39,13 +48,42 @@ export class PropertyService implements PropertyInterface {
           ],
         }
       : {};
-
+  
     const properties = await this.prisma.property.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
+      include: {
+        photos: {
+          select: {
+            id: true,
+            propertyId: true,
+          },
+          take: 1, // Pega apenas a primeira foto
+        },
+      },
+    });
+  
+    return properties.map((p) => {
+      // Filtra fotos onde propertyId é igual ao id na lógica da aplicação
+      const matchingPhoto = p.photos.find((photo) => photo.propertyId === p.id);
+      return this.toPropertyListDto({
+        ...p,
+        photoId: matchingPhoto?.id, // Inclui o ID da foto, se encontrado
+      });
+    });
+  }
+
+  async getPhotoDataById(photoId: string): Promise<Buffer> {
+    const photo = await this.prisma.photo.findUnique({
+      where: { id: photoId },
+      select: { data: true }, // Campo BLOB
     });
 
-    return properties.map((p) => this.toPropertyListDto(p));
+    if (!photo || !photo.data) {
+      throw new NotFoundException('Imagem não encontrada');
+    }
+
+    return photo.data; // Retorna o BLOB como Buffer
   }
 
   async searchProperties(location: string, type: string): Promise<PropertyListDto[]> {
@@ -83,22 +121,7 @@ export class PropertyService implements PropertyInterface {
       },
     });
 
-    return properties.map((p) => this.toPropertyListSearchDto(p));
-  }
-
-  private toPropertyListSearchDto(property: any): PropertyListDto {
-    return {
-      id: property.id,
-      title: property.title,
-      description: property.description,
-      createdAt: property.createdAt,
-      hostId: property.hostId,
-      pricePerUnit: property.pricePerUnit,
-      operatingMode: property.operatingMode,
-      type: property.type,
-      city: property.city,
-      state: property.state,
-    };
+    return properties.map((p) => this.toPropertyListDto(p));
   }
 
   async findById(id: string): Promise<PropertyDto> {
@@ -134,27 +157,27 @@ export class PropertyService implements PropertyInterface {
     }
   }
 
-  async addPhotos(propertyId: string, photoUrls: string[]): Promise<void> {
-    await this.verifyExistingProperty(propertyId);
+  // async addPhotos(propertyId: string, photoUrls: string[]): Promise<void> {
+  //   await this.verifyExistingProperty(propertyId);
 
-    const photoData = photoUrls.map((url) => ({
-      url,
-      propertyId,
-    }));
+  //   const photoData = photoUrls.map((url) => ({
+  //     url,
+  //     propertyId,
+  //   }));
 
-    await this.prisma.photo.createMany({
-      data: photoData,
-    });
-  }
+  //   await this.prisma.photo.createMany({
+  //     data: photoData,
+  //   });
+  // }
 
-  async removePhoto(propertyId: string, photoId: string): Promise<void> {
-    const photo = await this.prisma.photo.findUnique({ where: { id: photoId } });
-    if (!photo || photo.propertyId !== propertyId) {
-      throw new NotFoundException(`Foto não encontrada na propriedade.`);
-    }
+  // async removePhoto(propertyId: string, photoId: string): Promise<void> {
+  //   const photo = await this.prisma.photo.findUnique({ where: { id: photoId } });
+  //   if (!photo || photo.propertyId !== propertyId) {
+  //     throw new NotFoundException(`Foto não encontrada na propriedade.`);
+  //   }
 
-    await this.prisma.photo.delete({ where: { id: photoId } });
-  }
+  //   await this.prisma.photo.delete({ where: { id: photoId } });
+  // }
 
   async getMyProperties(userId: string): Promise<PropertyListDto[]> {
     const properties = await this.prisma.property.findMany({
@@ -164,7 +187,7 @@ export class PropertyService implements PropertyInterface {
     return properties.map((p) => this.toPropertyListDto(p));
   }
 
-  private toPropertyListDto(prop: property): PropertyListDto {
+  private toPropertyListDto(prop: any): PropertyListDto {
     return {
       id: prop.id,
       title: prop.title,
@@ -176,6 +199,7 @@ export class PropertyService implements PropertyInterface {
       type: prop.type,
       city: prop.city,
       state: prop.state,
+      photoId: prop.photoId,
     };
   }
 

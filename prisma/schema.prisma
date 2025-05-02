@@ -121,7 +121,7 @@ model transaction {
 // Fotos das propriedades
 model photo {
   id         String   @id @default(uuid())
-  url        String
+  data       Bytes    @map("data") // Campo para armazenar a imagem como BLOB
   propertyId String   @map("property_id")
   property   property @relation(fields: [propertyId], references: [id])
 

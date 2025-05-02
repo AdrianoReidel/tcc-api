@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { operating_mode } from '@prisma/client';
+import { Transform } from 'class-transformer';
 import { IsString, IsNotEmpty, IsOptional, IsNumber, IsEnum } from 'class-validator';
 
 export class CreatePropertyDto {
@@ -57,9 +58,9 @@ export class CreatePropertyDto {
   @IsNotEmpty({ message: 'O CEP é obrigatório.' })
   zipCode: string;
 
-  @ApiProperty({ example: 250.0, description: 'Preço por unidade de aluguel da propriedade' })
-  @IsNumber()
-  @IsNotEmpty({ message: 'O preço por unidade é obrigatório.' })
+  @ApiProperty()
+  @Transform(({ value }) => parseFloat(value), { toClassOnly: true })
+  @IsNumber({}, { message: 'O preço por unidade deve ser um número válido.' })
   pricePerUnit: number;
 
   @ApiProperty({ example: 'UUID', description: 'ID do host da propriedade' })

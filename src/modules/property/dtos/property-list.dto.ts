@@ -50,4 +50,7 @@ export class PropertyListDto {
 
   @ApiProperty({ example: 'Santa Catarina', description: 'Estado da propriedade' })
   state: string;
+
+  @ApiProperty({ description: 'Id da imagem de capa da propriedade' })
+  photoId?: string;
 }

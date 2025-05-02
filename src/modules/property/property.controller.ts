@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, Put, Query, UseGuards, Delete, Post, Req, UseInterceptors, UploadedFiles } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Put, Query, UseGuards, Delete, Post, Req, UseInterceptors, UploadedFiles, UploadedFile, Res, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth, ApiConsumes, ApiParam } from '@nestjs/swagger';
 import { PropertyInterface } from './property.interface';
 import { SuccessResponse } from 'src/decorators/success-response.decorator';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -8,6 +8,8 @@ import { PropertyListDto } from './dtos/property-list.dto';
 import { UpdatePropertyDto } from './dtos/update-property.dto';
 import { PropertyDto } from './dtos/property.dto';
 import { CreatePropertyDto } from './dtos/create-property.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 
 @ApiTags('Property')
 @Controller('property')
@@ -15,14 +17,38 @@ export class PropertyController {
   constructor(private readonly propertyService: PropertyInterface) {}
 
   @UseGuards(JwtAuthGuard)
+  @Post()
   @SuccessResponse('Propriedade criada.')
   @ApiOperation({ summary: 'Cria uma nova propriedade.' })
   @ApiBody({ type: CreatePropertyDto })
   @ApiResponse({ status: 201, description: 'Propriedade criada com sucesso.' })
-  @Post()
-  async createProperty(@Req() req: any, @Body() createPropertyDto: CreatePropertyDto): Promise<void> {
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: undefined, // Não salvar em disco, manter em memória
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
+          return callback(new Error('Apenas imagens (jpg, jpeg, png, gif) são permitidas.'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
+    }),
+  )
+  async createProperty(
+    @Req() req: any,
+    @Body() createPropertyDto: CreatePropertyDto,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<void> {
     createPropertyDto.hostId = req.user.sub;
-    await this.propertyService.createProperty(createPropertyDto);
+
+    // Verificar se o arquivo foi enviado
+    if (!file) {
+      throw new Error('A imagem é obrigatória.');
+    }
+
+    // Passar o buffer da imagem para o serviço
+    await this.propertyService.createProperty(createPropertyDto, file.buffer);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -33,6 +59,26 @@ export class PropertyController {
   @Get()
   async getAllProperties(@Query('search') search?: string): Promise<PropertyListDto[]> {
     return this.propertyService.getAllProperties(search);
+  }
+
+  @Get('photos/:photoId')
+  @ApiOperation({ summary: 'Retorna os dados da imagem pelo photoId.' })
+  @ApiResponse({ status: 200, description: 'Dados binários da imagem.' })
+  @ApiResponse({ status: 404, description: 'Imagem não encontrada.' })
+  @ApiParam({ name: 'photoId', required: true, type: Number, description: 'ID da foto' })
+  @UseGuards(JwtAuthGuard)
+  async getPhotoDataById(
+    @Param('photoId') photoId: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    try {
+      const photoData = await this.propertyService.getPhotoDataById(photoId);
+
+      res.setHeader('Content-Type', 'image/jpeg'); // ou image/png, dependendo do tipo
+      res.send(photoData); // Envia o buffer como binário
+    } catch (error) {
+      res.status(HttpStatus.NOT_FOUND).json({ message: 'Imagem não encontrada' });
+    }
   }
 
   @Get('search')
@@ -87,30 +133,30 @@ export class PropertyController {
     await this.propertyService.deleteProperty(id);
   }
 
-  @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
-  @SuccessResponse('Fotos adicionadas à propriedade.')
-  @ApiOperation({ summary: 'Adiciona fotos a uma propriedade.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        photoUrls: {
-          type: 'array',
-          items: { type: 'string' },
-        },
-      },
-    },
-  })
-  @Post(':id/photos')
-  async addPhotos(@Param('id') propertyId: string, @Body('photoUrls') photoUrls: string[]): Promise<void> {
-    await this.propertyService.addPhotos(propertyId, photoUrls);
-  }
+  // @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
+  // @SuccessResponse('Fotos adicionadas à propriedade.')
+  // @ApiOperation({ summary: 'Adiciona fotos a uma propriedade.' })
+  // @ApiBody({
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       photoUrls: {
+  //         type: 'array',
+  //         items: { type: 'string' },
+  //       },
+  //     },
+  //   },
+  // })
+  // @Post(':id/photos')
+  // async addPhotos(@Param('id') propertyId: string, @Body('photoUrls') photoUrls: string[]): Promise<void> {
+  //   await this.propertyService.addPhotos(propertyId, photoUrls);
+  // }
 
-  @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
-  @SuccessResponse('Foto removida da propriedade.')
-  @ApiOperation({ summary: 'Remove uma foto de uma propriedade.' })
-  @Delete(':propertyId/photos/:photoId')
-  async removePhoto(@Param('propertyId') propertyId: string, @Param('photoId') photoId: string): Promise<void> {
-    await this.propertyService.removePhoto(propertyId, photoId);
-  }
+  // @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
+  // @SuccessResponse('Foto removida da propriedade.')
+  // @ApiOperation({ summary: 'Remove uma foto de uma propriedade.' })
+  // @Delete(':propertyId/photos/:photoId')
+  // async removePhoto(@Param('propertyId') propertyId: string, @Param('photoId') photoId: string): Promise<void> {
+  //   await this.propertyService.removePhoto(propertyId, photoId);
+  // }
 }
