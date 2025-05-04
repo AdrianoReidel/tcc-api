@@ -35,6 +35,7 @@ export class PropertyService implements PropertyInterface {
       data: {
         data: imageBuffer,
         propertyId: property.id,
+        isCover: true, // Definindo a primeira foto como capa
       },
     });
   }
@@ -54,11 +55,13 @@ export class PropertyService implements PropertyInterface {
       orderBy: { createdAt: 'desc' },
       include: {
         photos: {
+          where: {
+            isCover: true,
+          },
           select: {
             id: true,
             propertyId: true,
           },
-          take: 1, // Pega apenas a primeira foto
         },
       },
     });
@@ -177,6 +180,7 @@ export class PropertyService implements PropertyInterface {
       data: {
         data: imageBuffer,
         propertyId: propertyId,
+        isCover: false,
       },
     });
   }
