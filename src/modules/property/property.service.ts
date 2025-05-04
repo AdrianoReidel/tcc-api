@@ -76,19 +76,6 @@ export class PropertyService implements PropertyInterface {
     });
   }
 
-  async getPhotoDataById(photoId: string): Promise<Buffer> {
-    const photo = await this.prisma.photo.findUnique({
-      where: { id: photoId },
-      select: { data: true }, // Campo BLOB
-    });
-
-    if (!photo || !photo.data) {
-      throw new NotFoundException('Imagem não encontrada');
-    }
-
-    return photo.data; // Retorna o BLOB como Buffer
-  }
-
   async searchProperties(location: string, type: string): Promise<PropertyListDto[]> {
     // Construir a cláusula where com base nos parâmetros
     const whereClause: any = {};
@@ -107,24 +94,43 @@ export class PropertyService implements PropertyInterface {
         throw new Error('Tipo de propriedade inválido. Use HOUSING, EVENTS ou SPORTS.');
       }
     }
+
     const properties = await this.prisma.property.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        createdAt: true,
-        hostId: true,
-        pricePerUnit: true,
-        operatingMode: true,
-        type: true,
-        city: true,
-        state: true,
+      include: {
+        photos: {
+          where: {
+            isCover: true,
+          },
+          select: {
+            id: true,
+            propertyId: true,
+          },
+        },
       },
     });
 
-    return properties.map((p) => this.toPropertyListDto(p));
+    return properties.map((p) => {
+      const matchingPhoto = p.photos.find((photo) => photo.propertyId === p.id);
+      return this.toPropertyListDto({
+        ...p,
+        photoId: matchingPhoto?.id,
+      });
+    });
+  }
+
+  async getPhotoDataById(photoId: string): Promise<Buffer> {
+    const photo = await this.prisma.photo.findUnique({
+      where: { id: photoId },
+      select: { data: true }, // Campo BLOB
+    });
+
+    if (!photo || !photo.data) {
+      throw new NotFoundException('Imagem não encontrada');
+    }
+
+    return photo.data; // Retorna o BLOB como Buffer
   }
 
   async findById(id: string): Promise<PropertyDto> {
