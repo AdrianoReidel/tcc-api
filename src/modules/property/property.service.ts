@@ -6,6 +6,7 @@ import { UpdatePropertyDto } from './dtos/update-property.dto';
 import { PropertyListDto } from './dtos/property-list.dto';
 import { PropertyDto } from './dtos/property.dto';
 import { property, property_status, property_type } from '@prisma/client';
+import { PhotoResponseDto } from './dtos/photo-response.dto';
 
 @Injectable()
 export class PropertyService implements PropertyInterface {
@@ -206,6 +207,28 @@ export class PropertyService implements PropertyInterface {
       orderBy: { createdAt: 'desc' },
     });
     return properties.map((p) => this.toPropertyListDto(p));
+  }
+
+  async getPhotosByPropertyId(propertyId: string): Promise<PhotoResponseDto[]> {
+    await this.verifyExistingProperty(propertyId);
+
+    const photos = await this.prisma.photo.findMany({
+      where: { 
+        propertyId,
+        isCover: false
+      },
+      select: {
+        id: true,
+        data: true,
+        propertyId: true,
+      },
+    });
+
+    return photos.map((photo) => ({
+      id: photo.id,
+      data: photo.data,
+      propertyId: photo.propertyId,
+    }));
   }
 
   private toPropertyListDto(prop: any): PropertyListDto {

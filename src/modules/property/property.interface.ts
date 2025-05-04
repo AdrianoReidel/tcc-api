@@ -2,6 +2,7 @@ import { CreatePropertyDto } from './dtos/create-property.dto';
 import { UpdatePropertyDto } from './dtos/update-property.dto';
 import { PropertyListDto } from './dtos/property-list.dto';
 import { PropertyDto } from './dtos/property.dto';
+import { PhotoResponseDto } from './dtos/photo-response.dto';
 
 export abstract class PropertyInterface {
   abstract createProperty(createPropertyDto: CreatePropertyDto, imageBuffer: Buffer): Promise<void>;
@@ -14,5 +15,6 @@ export abstract class PropertyInterface {
   abstract findById(id: string): Promise<PropertyDto>;
   abstract verifyExistingProperty(id: string): Promise<void>;
   abstract addPhotos(propertyId: string, imageBuffer: Buffer): Promise<void>;
-  //abstract removePhoto(propertyId: string, photoId: string): Promise<void>;
+  abstract removePhoto(propertyId: string, photoId: string): Promise<void>;
+  abstract getPhotosByPropertyId(propertyId: string): Promise<PhotoResponseDto[]>;
   }
