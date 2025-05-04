@@ -51,6 +51,30 @@ export class PropertyController {
     await this.propertyService.createProperty(createPropertyDto, file.buffer);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Fotos adicionadas à propriedade.')
+  @ApiOperation({ summary: 'Adiciona fotos a uma propriedade.' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: undefined, // Não salvar em disco, manter em memória
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
+          return callback(new Error('Apenas imagens (jpg, jpeg, png, gif) são permitidas.'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
+    }),
+  )
+  @Post(':id/photos')
+  async addPhotos(
+    @Param('id') propertyId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<void> {
+    await this.propertyService.addPhotos(propertyId, file.buffer);
+  }
+
   @SuccessResponse('Lista de propriedades.')
   @ApiOperation({ summary: 'Retorna a lista de propriedades.' })
   @ApiResponse({ status: 200, description: 'Lista de propriedades.' })
@@ -110,7 +134,7 @@ export class PropertyController {
     return this.propertyService.findById(id);
   }
 
-  @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
+  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Propriedade atualizada.')
   @ApiOperation({ summary: 'Atualiza uma propriedade existente.' })
   @ApiBody({ type: UpdatePropertyDto })
@@ -127,28 +151,9 @@ export class PropertyController {
   @Delete(':id')
   async deleteProperty(@Param('id') id: string): Promise<void> {
     await this.propertyService.deleteProperty(id);
-  }
+  }  
 
-  // @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
-  // @SuccessResponse('Fotos adicionadas à propriedade.')
-  // @ApiOperation({ summary: 'Adiciona fotos a uma propriedade.' })
-  // @ApiBody({
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       photoUrls: {
-  //         type: 'array',
-  //         items: { type: 'string' },
-  //       },
-  //     },
-  //   },
-  // })
-  // @Post(':id/photos')
-  // async addPhotos(@Param('id') propertyId: string, @Body('photoUrls') photoUrls: string[]): Promise<void> {
-  //   await this.propertyService.addPhotos(propertyId, photoUrls);
-  // }
-
-  // @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
+  // @UseGuards(JwtAuthGuard)
   // @SuccessResponse('Foto removida da propriedade.')
   // @ApiOperation({ summary: 'Remove uma foto de uma propriedade.' })
   // @Delete(':propertyId/photos/:photoId')

@@ -13,6 +13,6 @@ export abstract class PropertyInterface {
   abstract searchProperties(location: string, type: string): Promise<PropertyListDto[]>;
   abstract findById(id: string): Promise<PropertyDto>;
   abstract verifyExistingProperty(id: string): Promise<void>;
-  //abstract addPhotos(propertyId: string, photoUrls: string[]): Promise<void>;
+  abstract addPhotos(propertyId: string, imageBuffer: Buffer): Promise<void>;
   //abstract removePhoto(propertyId: string, photoId: string): Promise<void>;
   }
