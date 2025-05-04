@@ -51,7 +51,6 @@ export class PropertyController {
     await this.propertyService.createProperty(createPropertyDto, file.buffer);
   }
 
-  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Lista de propriedades.')
   @ApiOperation({ summary: 'Retorna a lista de propriedades.' })
   @ApiResponse({ status: 200, description: 'Lista de propriedades.' })
@@ -66,7 +65,6 @@ export class PropertyController {
   @ApiResponse({ status: 200, description: 'Dados binários da imagem.' })
   @ApiResponse({ status: 404, description: 'Imagem não encontrada.' })
   @ApiParam({ name: 'photoId', required: true, type: Number, description: 'ID da foto' })
-  @UseGuards(JwtAuthGuard)
   async getPhotoDataById(
     @Param('photoId') photoId: string,
     @Res() res: Response,
@@ -82,7 +80,6 @@ export class PropertyController {
   }
 
   @Get('search')
-  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Buscar propriedades por localização e tipo' })
   @ApiResponse({ status: 200, description: 'Lista de propriedades filtradas.', type: [PropertyListDto] })
@@ -105,7 +102,6 @@ export class PropertyController {
     return this.propertyService.getMyProperties(userId);
   }
 
-  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Detalhes da propriedade.')
   @ApiOperation({ summary: 'Retorna detalhes de uma propriedade por ID.' })
   @ApiResponse({ status: 200, description: 'Detalhes da propriedade.' })
@@ -124,7 +120,7 @@ export class PropertyController {
     await this.propertyService.updateProperty(id, updatePropertyDto);
   }
 
-  @UseGuards(JwtAuthGuard, PropertyOwnershipGuard)
+  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Propriedade deletada.')
   @ApiOperation({ summary: 'Deleta uma propriedade.' })
   @ApiResponse({ status: 200, description: 'Propriedade deletada.' })

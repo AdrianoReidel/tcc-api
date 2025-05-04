@@ -144,7 +144,21 @@ export class PropertyService implements PropertyInterface {
   }
 
   async deleteProperty(id: string): Promise<void> {
+    // Verificar se a propriedade existe
     await this.verifyExistingProperty(id);
+
+    // Buscar todas as fotos associadas à propriedade
+    const photos = await this.prisma.photo.findMany({
+      where: { propertyId: id },
+      select: { id: true }, // Selecionar apenas o ID das fotos
+    });
+
+    // Deletar cada foto usando o método removePhoto
+    for (const photo of photos) {
+      await this.removePhoto(id, photo.id);
+    }
+
+    // Após deletar todas as fotos, deletar a propriedade
     await this.prisma.property.delete({
       where: { id },
     });
@@ -157,27 +171,24 @@ export class PropertyService implements PropertyInterface {
     }
   }
 
-  // async addPhotos(propertyId: string, photoUrls: string[]): Promise<void> {
-  //   await this.verifyExistingProperty(propertyId);
+  async addPhotos(propertyId: string, imageBuffer: Buffer): Promise<void> {
+    await this.verifyExistingProperty(propertyId);
+    await this.prisma.photo.create({
+      data: {
+        data: imageBuffer,
+        propertyId: propertyId,
+      },
+    });
+  }
 
-  //   const photoData = photoUrls.map((url) => ({
-  //     url,
-  //     propertyId,
-  //   }));
+  async removePhoto(propertyId: string, photoId: string): Promise<void> {
+    const photo = await this.prisma.photo.findUnique({ where: { id: photoId } });
+    if (!photo || photo.propertyId !== propertyId) {
+      throw new NotFoundException(`Foto não encontrada na propriedade.`);
+    }
 
-  //   await this.prisma.photo.createMany({
-  //     data: photoData,
-  //   });
-  // }
-
-  // async removePhoto(propertyId: string, photoId: string): Promise<void> {
-  //   const photo = await this.prisma.photo.findUnique({ where: { id: photoId } });
-  //   if (!photo || photo.propertyId !== propertyId) {
-  //     throw new NotFoundException(`Foto não encontrada na propriedade.`);
-  //   }
-
-  //   await this.prisma.photo.delete({ where: { id: photoId } });
-  // }
+    await this.prisma.photo.delete({ where: { id: photoId } });
+  }
 
   async getMyProperties(userId: string): Promise<PropertyListDto[]> {
     const properties = await this.prisma.property.findMany({
