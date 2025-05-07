@@ -142,14 +142,47 @@ export class PropertyService implements PropertyInterface {
     return this.toPropertyDto(prop);
   }
 
-  async updateProperty(id: string, updatePropertyDto: UpdatePropertyDto): Promise<void> {
-    await this.verifyExistingProperty(id);
+  async updateProperty(id: string, updatePropertyDto: UpdatePropertyDto, imageBuffer?: Buffer): Promise<void> {
+    // Verificar se a propriedade existe
+    const property = await this.prisma.property.findUnique({
+      where: { id },
+      include: { photos: true },
+    });
 
+    if (!property) {
+      throw new NotFoundException('Propriedade não encontrada.');
+    }
+
+    // Atualizar os dados da propriedade
+    const updatedData: any = { ...updatePropertyDto };
+
+    // Se uma nova imagem foi enviada, atualizar ou criar a foto
+    if (imageBuffer) {
+      // Se já existe uma foto de capa, atualizá-la
+      const existingPhoto = property.photos.find(photo => photo.isCover);
+      if (existingPhoto) {
+        await this.prisma.photo.update({
+          where: { id: existingPhoto.id },
+          data: {
+            data: imageBuffer,
+          },
+        });
+      } else {
+        // Se não existe foto de capa, criar uma nova
+        await this.prisma.photo.create({
+          data: {
+            propertyId: id,
+            data: imageBuffer,
+            isCover: true,
+          },
+        });
+      }
+    }
+
+    // Atualizar os outros campos da propriedade
     await this.prisma.property.update({
       where: { id },
-      data: {
-        ...updatePropertyDto,
-      },
+      data: updatedData,
     });
   }
 

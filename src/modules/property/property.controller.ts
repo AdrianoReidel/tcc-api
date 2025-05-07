@@ -51,6 +51,34 @@ export class PropertyController {
     // Passar o buffer da imagem para o serviço
     await this.propertyService.createProperty(createPropertyDto, file.buffer);
   }
+  
+  @UseGuards(JwtAuthGuard)
+  @Put(':id')
+  @SuccessResponse('Propriedade atualizada.')
+  @ApiOperation({ summary: 'Atualiza uma propriedade existente.' })
+  @ApiBody({ type: UpdatePropertyDto })
+  @ApiResponse({ status: 200, description: 'Propriedade atualizada.' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: undefined, // Não salvar em disco, manter em memória
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/image\/(jpg|jpeg|png|gif)/)) {
+          return callback(new Error('Apenas imagens (jpg, jpeg, png, gif) são permitidas.'), false);
+        }
+        callback(null, true);
+      },
+      limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
+    }),
+  )
+  async updateProperty(
+    @Param('id') id: string,
+    @Body() updatePropertyDto: UpdatePropertyDto,
+    @UploadedFile() file?: Express.Multer.File, // O arquivo é opcional
+  ): Promise<void> {
+    // Passar o buffer da imagem para o serviço apenas se um arquivo for enviado
+    await this.propertyService.updateProperty(id, updatePropertyDto, file?.buffer);
+  }
 
   @UseGuards(JwtAuthGuard)
   @SuccessResponse('Fotos adicionadas à propriedade.')
@@ -153,16 +181,6 @@ export class PropertyController {
       }
       throw new Error('Erro ao buscar fotos da propriedade.');
     }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @SuccessResponse('Propriedade atualizada.')
-  @ApiOperation({ summary: 'Atualiza uma propriedade existente.' })
-  @ApiBody({ type: UpdatePropertyDto })
-  @ApiResponse({ status: 200, description: 'Propriedade atualizada.' })
-  @Put(':id')
-  async updateProperty(@Param('id') id: string, @Body() updatePropertyDto: UpdatePropertyDto): Promise<void> {
-    await this.propertyService.updateProperty(id, updatePropertyDto);
   }
 
   @UseGuards(JwtAuthGuard)

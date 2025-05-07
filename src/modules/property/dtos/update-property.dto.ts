@@ -1,6 +1,7 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber, IsEnum } from 'class-validator';
 import { property_type, property_status } from '@prisma/client';
+import { Transform } from 'class-transformer';
 
 export class UpdatePropertyDto {
   @ApiPropertyOptional({
@@ -75,11 +76,8 @@ export class UpdatePropertyDto {
   @IsOptional()
   zipCode?: string;
 
-  @ApiPropertyOptional({
-    example: 250.0,
-    description: 'Preço por unidade de aluguel da propriedade',
-  })
-  @IsNumber()
-  @IsOptional()
+  @ApiProperty()
+  @Transform(({ value }) => parseFloat(value), { toClassOnly: true })
+  @IsNumber({}, { message: 'O preço por unidade deve ser um número válido.' })
   pricePerUnit?: number;
 }
