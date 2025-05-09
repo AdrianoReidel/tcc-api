@@ -1,5 +1,31 @@
-import { Body, Controller, Get, Param, Put, Query, UseGuards, Delete, Post, Req, UseInterceptors, UploadedFiles, UploadedFile, Res, HttpStatus, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery, ApiBearerAuth, ApiConsumes, ApiParam } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Put,
+  Query,
+  UseGuards,
+  Delete,
+  Post,
+  Req,
+  UseInterceptors,
+  UploadedFiles,
+  UploadedFile,
+  Res,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiParam,
+} from '@nestjs/swagger';
 import { PropertyInterface } from './property.interface';
 import { SuccessResponse } from 'src/decorators/success-response.decorator';
 import { JwtAuthGuard } from 'src/modules/auth/guards/jwt-auth.guard';
@@ -51,7 +77,7 @@ export class PropertyController {
     // Passar o buffer da imagem para o serviço
     await this.propertyService.createProperty(createPropertyDto, file.buffer);
   }
-  
+
   @UseGuards(JwtAuthGuard)
   @Put(':id')
   @SuccessResponse('Propriedade atualizada.')
@@ -97,10 +123,7 @@ export class PropertyController {
     }),
   )
   @Post(':id/photos')
-  async addPhotos(
-    @Param('id') propertyId: string,
-    @UploadedFile() file: Express.Multer.File,
-  ): Promise<void> {
+  async addPhotos(@Param('id') propertyId: string, @UploadedFile() file: Express.Multer.File): Promise<void> {
     await this.propertyService.addPhotos(propertyId, file.buffer);
   }
 
@@ -118,10 +141,7 @@ export class PropertyController {
   @ApiResponse({ status: 200, description: 'Dados binários da imagem.' })
   @ApiResponse({ status: 404, description: 'Imagem não encontrada.' })
   @ApiParam({ name: 'photoId', required: true, type: Number, description: 'ID da foto' })
-  async getPhotoDataById(
-    @Param('photoId') photoId: string,
-    @Res() res: Response,
-  ): Promise<void> {
+  async getPhotoDataById(@Param('photoId') photoId: string, @Res() res: Response): Promise<void> {
     try {
       const photoData = await this.propertyService.getPhotoDataById(photoId);
 
@@ -137,11 +157,13 @@ export class PropertyController {
   @ApiOperation({ summary: 'Buscar propriedades por localização e tipo' })
   @ApiResponse({ status: 200, description: 'Lista de propriedades filtradas.', type: [PropertyListDto] })
   @ApiQuery({ name: 'location', required: true, type: String, description: 'Cidade para filtrar as propriedades' })
-  @ApiQuery({ name: 'type', required: true, type: String, description: 'Tipo de propriedade (HOUSING, EVENTS, SPORTS)' })
-  async searchProperties(
-    @Query('location') location: string,
-    @Query('type') type: string,
-  ): Promise<PropertyListDto[]> {
+  @ApiQuery({
+    name: 'type',
+    required: true,
+    type: String,
+    description: 'Tipo de propriedade (HOUSING, EVENTS, SPORTS)',
+  })
+  async searchProperties(@Query('location') location: string, @Query('type') type: string): Promise<PropertyListDto[]> {
     return this.propertyService.searchProperties(location, type);
   }
 
@@ -162,7 +184,7 @@ export class PropertyController {
   async findById(@Param('id') id: string): Promise<PropertyDto> {
     return this.propertyService.findById(id);
   }
-  
+
   @UseGuards(JwtAuthGuard)
   @SuccessResponse('Fotos da propriedade.')
   @ApiOperation({ summary: 'Retorna fotos da propriedade pelo ID.' })
@@ -190,7 +212,7 @@ export class PropertyController {
   @Delete(':id')
   async deleteProperty(@Param('id') id: string): Promise<void> {
     await this.propertyService.deleteProperty(id);
-  }  
+  }
 
   @UseGuards(JwtAuthGuard)
   @SuccessResponse('Foto removida da propriedade.')

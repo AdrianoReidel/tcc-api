@@ -15,9 +15,9 @@ export class PropertyDto {
   description: string;
 
   @ApiProperty({
-      example: 'HOUSING',
-      description: 'Tipo da propriedade (HOUSING, EVENTS, SPORTS)',
-    })
+    example: 'HOUSING',
+    description: 'Tipo da propriedade (HOUSING, EVENTS, SPORTS)',
+  })
   type: string;
 
   @ApiProperty({ example: 'AVAILABLE', description: 'Status da propriedade' })
@@ -63,4 +63,10 @@ export class PropertyDto {
     enum: operating_mode,
   })
   operatingMode?: operating_mode;
+
+  @ApiProperty({
+    example: ['photo1-id', 'photo2-id'],
+    description: 'Vetor de IDs das fotos associadas à propriedade',
+  })
+  photoIds: string[];
 }

@@ -50,7 +50,7 @@ export class PropertyService implements PropertyInterface {
           ],
         }
       : {};
-  
+
     const properties = await this.prisma.property.findMany({
       where: whereClause,
       orderBy: { createdAt: 'desc' },
@@ -66,7 +66,7 @@ export class PropertyService implements PropertyInterface {
         },
       },
     });
-  
+
     return properties.map((p) => {
       // Filtra fotos onde propertyId é igual ao id na lógica da aplicação
       const matchingPhoto = p.photos.find((photo) => photo.propertyId === p.id);
@@ -135,10 +135,17 @@ export class PropertyService implements PropertyInterface {
   }
 
   async findById(id: string): Promise<PropertyDto> {
-    const prop = await this.prisma.property.findUnique({ where: { id } });
+    const prop = await this.prisma.property.findUnique({
+      where: { id },
+      include: {
+        photos: true, // Inclui os registros da tabela photo
+      },
+    });
+
     if (!prop) {
       throw new NotFoundException(`Propriedade com ID "${id}" não encontrada.`);
     }
+
     return this.toPropertyDto(prop);
   }
 
@@ -159,7 +166,7 @@ export class PropertyService implements PropertyInterface {
     // Se uma nova imagem foi enviada, atualizar ou criar a foto
     if (imageBuffer) {
       // Se já existe uma foto de capa, atualizá-la
-      const existingPhoto = property.photos.find(photo => photo.isCover);
+      const existingPhoto = property.photos.find((photo) => photo.isCover);
       if (existingPhoto) {
         await this.prisma.photo.update({
           where: { id: existingPhoto.id },
@@ -246,9 +253,9 @@ export class PropertyService implements PropertyInterface {
     await this.verifyExistingProperty(propertyId);
 
     const photos = await this.prisma.photo.findMany({
-      where: { 
+      where: {
         propertyId,
-        isCover: false
+        isCover: false,
       },
       select: {
         id: true,
@@ -280,7 +287,7 @@ export class PropertyService implements PropertyInterface {
     };
   }
 
-  private toPropertyDto(prop: property): PropertyDto {
+  private toPropertyDto(prop: any): PropertyDto {
     return {
       id: prop.id,
       title: prop.title,
@@ -297,6 +304,7 @@ export class PropertyService implements PropertyInterface {
       hostId: prop.hostId,
       createdAt: prop.createdAt,
       updatedAt: prop.updatedAt,
+      photoIds: prop.photos.map((photo) => photo.id),
     };
   }
 }
