@@ -307,4 +307,25 @@ export class PropertyService implements PropertyInterface {
       photoIds: prop.photos.map((photo) => photo.id),
     };
   }
+
+  async getPhotosByPropertyIdSinglePage(propertyId: string): Promise<PhotoResponseDto[]> {
+    await this.verifyExistingProperty(propertyId);
+
+    const photos = await this.prisma.photo.findMany({
+      where: {
+        propertyId,
+      },
+      select: {
+        id: true,
+        data: true,
+        propertyId: true,
+      },
+    });
+
+    return photos.map((photo) => ({
+      id: photo.id,
+      data: photo.data,
+      propertyId: photo.propertyId,
+    }));
+  }
 }

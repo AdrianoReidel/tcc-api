@@ -206,6 +206,26 @@ export class PropertyController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Fotos da propriedade para single page.')
+  @ApiOperation({ summary: 'Retorna fotos da propriedade pelo ID.' })
+  @ApiResponse({ status: 200, description: 'Fotos da propriedade.', type: [PhotoResponseDto] })
+  @Get(':propertyId/photosSinglePage')
+  async getPhotosByPropertyIdSinglePage(@Param('propertyId') propertyId: string): Promise<PhotoResponseDto[]> {
+    if (!propertyId) {
+      throw new NotFoundException('Parâmetro propertyId é obrigatório.');
+    }
+    try {
+      const photos = await this.propertyService.getPhotosByPropertyIdSinglePage(propertyId);
+      return photos;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error('Erro ao buscar fotos da propriedade.');
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Propriedade deletada.')
   @ApiOperation({ summary: 'Deleta uma propriedade.' })
   @ApiResponse({ status: 200, description: 'Propriedade deletada.' })

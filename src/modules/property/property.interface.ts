@@ -17,4 +17,5 @@ export abstract class PropertyInterface {
   abstract addPhotos(propertyId: string, imageBuffer: Buffer): Promise<void>;
   abstract removePhoto(propertyId: string, photoId: string): Promise<void>;
   abstract getPhotosByPropertyId(propertyId: string): Promise<PhotoResponseDto[]>;
+  abstract getPhotosByPropertyIdSinglePage(propertyId: string): Promise<PhotoResponseDto[]>;
   }
