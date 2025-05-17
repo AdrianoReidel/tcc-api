@@ -139,7 +139,12 @@ export class PropertyService implements PropertyInterface {
     const prop = await this.prisma.property.findUnique({
       where: { id },
       include: {
-        photos: true, // Inclui os registros da tabela photo
+        photos: true,
+        reservations: {
+          where: {
+            status: 'PENDING', // Considerar apenas reservas pendentes
+          },
+        },
       },
     });
 
@@ -148,6 +153,32 @@ export class PropertyService implements PropertyInterface {
     }
 
     return this.toPropertyDto(prop);
+  }
+
+  private toPropertyDto(prop: any): PropertyDto {
+    return {
+      id: prop.id,
+      title: prop.title,
+      description: prop.description,
+      type: prop.type,
+      status: prop.status,
+      street: prop.street,
+      city: prop.city,
+      state: prop.state,
+      country: prop.country,
+      zipCode: prop.zipCode,
+      pricePerUnit: prop.pricePerUnit.toNumber(),
+      hostId: prop.hostId,
+      createdAt: prop.createdAt,
+      updatedAt: prop.updatedAt,
+      operatingMode: prop.operatingMode,
+      photoIds: prop.photos.map((photo: any) => photo.id),
+      reservations: prop.reservations.map((reservation: any) => ({
+        checkIn: reservation.checkIn,
+        checkOut: reservation.checkOut,
+        selectedTime: reservation.selectedTime,
+      })),
+    };
   }
 
   async updateProperty(id: string, updatePropertyDto: UpdatePropertyDto, imageBuffer?: Buffer): Promise<void> {
@@ -288,27 +319,6 @@ export class PropertyService implements PropertyInterface {
     };
   }
 
-  private toPropertyDto(prop: any): PropertyDto {
-    return {
-      id: prop.id,
-      title: prop.title,
-      description: prop.description,
-      type: prop.type,
-      status: prop.status,
-      street: prop.street,
-      city: prop.city,
-      state: prop.state,
-      country: prop.country,
-      zipCode: prop.zipCode,
-      pricePerUnit: prop.pricePerUnit.toNumber(),
-      operatingMode: prop.operatingMode,
-      hostId: prop.hostId,
-      createdAt: prop.createdAt,
-      updatedAt: prop.updatedAt,
-      photoIds: prop.photos.map((photo) => photo.id),
-    };
-  }
-
   async getPhotosByPropertyIdSinglePage(propertyId: string): Promise<PhotoResponseDto[]> {
     await this.verifyExistingProperty(propertyId);
 
@@ -330,11 +340,7 @@ export class PropertyService implements PropertyInterface {
     }));
   }
 
-  async reserveProperty(
-    propertyId: string,
-    createReservationDto: CreateReservationDto,
-    guestId: string,
-  ): Promise<void> {
+ async reserveProperty(propertyId: string, createReservationDto: CreateReservationDto, guestId: string): Promise<void> {
     // Verificar se a propriedade existe
     const property = await this.prisma.property.findUnique({
       where: { id: propertyId },
@@ -370,10 +376,8 @@ export class PropertyService implements PropertyInterface {
       }
     }
 
-    // Converter selectedTime para minutos desde meia-noite
-    const selectedTimeInMinutes = selectedTime
-      ? parseInt(selectedTime.toString().split(':')[0]) * 60 + parseInt(selectedTime.toString().split(':')[1])
-      : 0;
+    // Usar selectedTime como hora (inteiro) diretamente, ou 0 para tipos que não usam horário
+    const finalSelectedTime = property.type === 'SPORTS' ? selectedTime || 0 : 0;
 
     // Criar a reserva
     await this.prisma.reservation.create({
@@ -382,7 +386,7 @@ export class PropertyService implements PropertyInterface {
         guestId,
         checkIn: new Date(startDate),
         checkOut: endDate ? new Date(endDate) : new Date(startDate),
-        selectedTime: selectedTimeInMinutes,
+        selectedTime: finalSelectedTime,
         totalPrice,
         status: 'PENDING',
       },

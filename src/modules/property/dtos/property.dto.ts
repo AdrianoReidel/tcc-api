@@ -1,6 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { operating_mode } from '@prisma/client';
 
+class ReservationDto {
+  @ApiProperty({ example: '2025-05-17T00:00:00.000Z', description: 'Data de check-in' })
+  checkIn: Date;
+
+  @ApiProperty({ example: '2025-05-18T00:00:00.000Z', description: 'Data de check-out' })
+  checkOut: Date;
+
+  @ApiProperty({ example: 10, description: 'Horário selecionado (hora como inteiro, ex.: 10 para 10:00)' })
+  selectedTime: number;
+}
+
 export class PropertyDto {
   @ApiProperty({ example: 'UUID', description: 'ID da propriedade' })
   id: string;
@@ -69,4 +80,10 @@ export class PropertyDto {
     description: 'Vetor de IDs das fotos associadas à propriedade',
   })
   photoIds: string[];
+
+  @ApiProperty({
+    type: [ReservationDto],
+    description: 'Lista de reservas associadas à propriedade',
+  })
+  reservations: ReservationDto[];
 }
