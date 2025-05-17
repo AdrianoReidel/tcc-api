@@ -37,6 +37,7 @@ import { CreatePropertyDto } from './dtos/create-property.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
+import { CreateReservationDto } from './dtos/create-reservation.dto';
 
 @ApiTags('Property')
 @Controller('property')
@@ -205,7 +206,6 @@ export class PropertyController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Fotos da propriedade para single page.')
   @ApiOperation({ summary: 'Retorna fotos da propriedade pelo ID.' })
   @ApiResponse({ status: 200, description: 'Fotos da propriedade.', type: [PhotoResponseDto] })
@@ -240,5 +240,29 @@ export class PropertyController {
   @Delete(':propertyId/photos/:photoId')
   async removePhoto(@Param('propertyId') propertyId: string, @Param('photoId') photoId: string): Promise<void> {
     await this.propertyService.removePhoto(propertyId, photoId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Reserva criada com sucesso.')
+  @ApiOperation({ summary: 'Cria uma reserva para uma propriedade.' })
+  @ApiResponse({ status: 201, description: 'Reserva criada.' })
+  @Post(':propertyId/reserve')
+  async reserveProperty(
+    @Param('propertyId') propertyId: string,
+    @Body() createReservationDto: CreateReservationDto,
+    @Req() req: any,
+  ): Promise<void> {
+    if (!propertyId) {
+      throw new NotFoundException('Parâmetro propertyId é obrigatório.');
+    }
+    const userId = req.user.sub;
+    try {
+      await this.propertyService.reserveProperty(propertyId, createReservationDto, userId);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error('Erro ao criar a reserva.');
+    }
   }
 }

@@ -7,6 +7,7 @@ import { PropertyListDto } from './dtos/property-list.dto';
 import { PropertyDto } from './dtos/property.dto';
 import { property, property_status, property_type } from '@prisma/client';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
+import { CreateReservationDto } from './dtos/create-reservation.dto';
 
 @Injectable()
 export class PropertyService implements PropertyInterface {
@@ -327,5 +328,64 @@ export class PropertyService implements PropertyInterface {
       data: photo.data,
       propertyId: photo.propertyId,
     }));
+  }
+
+  async reserveProperty(
+    propertyId: string,
+    createReservationDto: CreateReservationDto,
+    guestId: string,
+  ): Promise<void> {
+    // Verificar se a propriedade existe
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Propriedade não encontrada.');
+    }
+
+    // Validar datas e calcular o preço
+    const { startDate, endDate, selectedTime } = createReservationDto;
+    let totalPrice: number;
+
+    if (property.type === 'SPORTS') {
+      if (!startDate || !selectedTime) {
+        throw new Error('Data e horário são obrigatórios para reservas de esportes.');
+      }
+      totalPrice = property.pricePerUnit.toNumber(); // Preço fixo por horário
+    } else {
+      if (!startDate || !endDate) {
+        throw new Error('Data de início e fim são obrigatórias para hospedagens e eventos.');
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+      if (property.type === 'HOUSING') {
+        totalPrice = diffDays > 1 ? property.pricePerUnit.toNumber() * (diffDays - 1) : 0; // Preço por noite
+      } else {
+        totalPrice = diffDays * property.pricePerUnit.toNumber(); // Preço por dia (EVENTS)
+      }
+    }
+
+    // Converter selectedTime para minutos desde meia-noite
+    const selectedTimeInMinutes = selectedTime
+      ? parseInt(selectedTime.toString().split(':')[0]) * 60 + parseInt(selectedTime.toString().split(':')[1])
+      : 0;
+
+    // Criar a reserva
+    await this.prisma.reservation.create({
+      data: {
+        propertyId,
+        guestId,
+        checkIn: new Date(startDate),
+        checkOut: endDate ? new Date(endDate) : new Date(startDate),
+        selectedTime: selectedTimeInMinutes,
+        totalPrice,
+        status: 'PENDING',
+      },
+    });
   }
 }

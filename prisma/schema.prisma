@@ -155,36 +155,22 @@ model property {
 
 // Reservas feitas pelos hóspedes pras propriedades
 model reservation {
-  id         String             @id @default(uuid())
-  propertyId String             @map("property_id")
-  guestId    String             @map("guest_id")
-  property   property           @relation(fields: [propertyId], references: [id])
-  guest      app_user           @relation(fields: [guestId], references: [id])
-  checkIn    DateTime           @map("check_in")
-  checkOut   DateTime           @map("check_out")
-  guestCount Int                @map("guest_count")
-  totalPrice Decimal            @map("total_price") @db.Decimal(10, 2)
-  status     reservation_status
-  events     check_event[]
-  reviews    review[]
-  createdAt  DateTime           @default(now()) @map("created_at")
-  updatedAt  DateTime           @updatedAt @map("updated_at")
+  id             String             @id @default(uuid())
+  propertyId     String             @map("property_id")
+  guestId        String             @map("guest_id")
+  property       property           @relation(fields: [propertyId], references: [id])
+  guest          app_user           @relation(fields: [guestId], references: [id])
+  checkIn        DateTime           @map("check_in")
+  checkOut       DateTime           @map("check_out")
+  selectedTime   Int
+  totalPrice     Decimal            @map("total_price") @db.Decimal(10, 2)
+  status         reservation_status @default(PENDING)
+  reviews        review[]
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
 
   @@index([propertyId])
   @@index([guestId])
-}
-
-// Eventos de check-in e check-out das reservas
-model check_event {
-  id            Int          @id @default(autoincrement())
-  reservationId String       @map("reservation_id")
-  reservation   reservation  @relation(fields: [reservationId], references: [id])
-  type          event_type
-  eventDate     DateTime     @map("event_date")
-  status        event_status
-  createdAt     DateTime     @default(now()) @map("created_at")
-
-  @@index([reservationId])
 }
 
 // Avaliações feitas por hóspedes ou anfitriões

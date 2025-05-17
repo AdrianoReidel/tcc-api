@@ -3,10 +3,11 @@ import { UpdatePropertyDto } from './dtos/update-property.dto';
 import { PropertyListDto } from './dtos/property-list.dto';
 import { PropertyDto } from './dtos/property.dto';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
+import { CreateReservationDto } from './dtos/create-reservation.dto';
 
 export abstract class PropertyInterface {
   abstract createProperty(createPropertyDto: CreatePropertyDto, imageBuffer: Buffer): Promise<void>;
-  abstract updateProperty(id: string, updatePropertyDto: UpdatePropertyDto, imageBuffer: Buffer ): Promise<void>;
+  abstract updateProperty(id: string, updatePropertyDto: UpdatePropertyDto, imageBuffer: Buffer): Promise<void>;
   abstract deleteProperty(id: string): Promise<void>;
   abstract getMyProperties(userId: string): Promise<PropertyListDto[]>;
   abstract getAllProperties(search?: string): Promise<PropertyListDto[]>;
@@ -18,4 +19,9 @@ export abstract class PropertyInterface {
   abstract removePhoto(propertyId: string, photoId: string): Promise<void>;
   abstract getPhotosByPropertyId(propertyId: string): Promise<PhotoResponseDto[]>;
   abstract getPhotosByPropertyIdSinglePage(propertyId: string): Promise<PhotoResponseDto[]>;
-  }
+  abstract reserveProperty(
+    propertyId: string,
+    createReservationDto: CreateReservationDto,
+    userId: string,
+  ): Promise<void>;
+}
