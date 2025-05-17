@@ -38,6 +38,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
+import { ReservationDto } from './dtos/reservation.dto';
 
 @ApiTags('Property')
 @Controller('property')
@@ -135,6 +136,17 @@ export class PropertyController {
   @Get()
   async getAllProperties(@Query('search') search?: string): Promise<PropertyListDto[]> {
     return this.propertyService.getAllProperties(search);
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Lista de reservas.')
+  @ApiOperation({ summary: 'Retorna todas as reservas do usuário logado.' })
+  @ApiResponse({ status: 200, description: 'Lista de reservas.' })
+  @Get('my-reservations')
+  async getMyReservations(
+    @Req() req: any,
+  ): Promise<ReservationDto[]> {
+    return this.propertyService.getMyReservations(req.user.sub);
   }
 
   @Get('photos/:photoId')
@@ -255,9 +267,8 @@ export class PropertyController {
     if (!propertyId) {
       throw new NotFoundException('Parâmetro propertyId é obrigatório.');
     }
-    const userId = req.user.sub;
     try {
-      await this.propertyService.reserveProperty(propertyId, createReservationDto, userId);
+      await this.propertyService.reserveProperty(propertyId, createReservationDto, req.user.sub);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

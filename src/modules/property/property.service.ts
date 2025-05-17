@@ -8,6 +8,7 @@ import { PropertyDto } from './dtos/property.dto';
 import { property, property_status, property_type } from '@prisma/client';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
+import { ReservationDto } from './dtos/reservation.dto';
 
 @Injectable()
 export class PropertyService implements PropertyInterface {
@@ -142,8 +143,10 @@ export class PropertyService implements PropertyInterface {
         photos: true,
         reservations: {
           where: {
-            status: 'PENDING', // Considerar apenas reservas pendentes
-          },
+            status: {
+              not: 'CANCELED', // Desconsiderar reservas canceladas
+            },
+          }
         },
       },
     });
@@ -229,6 +232,11 @@ export class PropertyService implements PropertyInterface {
     // Verificar se a propriedade existe
     await this.verifyExistingProperty(id);
 
+    // Buscar e deletar todas as reservas associadas à propriedade
+    await this.prisma.reservation.deleteMany({
+      where: { propertyId: id },
+    });
+
     // Buscar todas as fotos associadas à propriedade
     const photos = await this.prisma.photo.findMany({
       where: { propertyId: id },
@@ -240,7 +248,7 @@ export class PropertyService implements PropertyInterface {
       await this.removePhoto(id, photo.id);
     }
 
-    // Após deletar todas as fotos, deletar a propriedade
+    // Após deletar todas as reservas e fotos, deletar a propriedade
     await this.prisma.property.delete({
       where: { id },
     });
@@ -340,7 +348,7 @@ export class PropertyService implements PropertyInterface {
     }));
   }
 
- async reserveProperty(propertyId: string, createReservationDto: CreateReservationDto, guestId: string): Promise<void> {
+  async reserveProperty(propertyId: string, createReservationDto: CreateReservationDto, guestId: string): Promise<void> {
     // Verificar se a propriedade existe
     const property = await this.prisma.property.findUnique({
       where: { id: propertyId },
@@ -391,5 +399,28 @@ export class PropertyService implements PropertyInterface {
         status: 'PENDING',
       },
     });
+  }
+
+  async getMyReservations(guestId: string): Promise<ReservationDto[]> {
+    const reservations = await this.prisma.reservation.findMany({
+      where: {
+        guestId,
+      },
+      include: {
+        property: true,
+      },
+    });
+
+    return reservations.map((reservation) => ({
+      id: reservation.id,
+      propertyId: reservation.propertyId,
+      propertyTitle: reservation.property.title,
+      propertyType: reservation.property.type,
+      checkIn: reservation.checkIn,
+      checkOut: reservation.checkOut,
+      selectedTime: reservation.selectedTime,
+      totalPrice: reservation.totalPrice.toNumber(),
+      status: reservation.status,
+    }));
   }
 }

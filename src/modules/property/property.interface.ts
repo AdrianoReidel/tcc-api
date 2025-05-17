@@ -4,6 +4,7 @@ import { PropertyListDto } from './dtos/property-list.dto';
 import { PropertyDto } from './dtos/property.dto';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
+import { ReservationDto } from './dtos/reservation.dto';
 
 export abstract class PropertyInterface {
   abstract createProperty(createPropertyDto: CreatePropertyDto, imageBuffer: Buffer): Promise<void>;
@@ -24,4 +25,5 @@ export abstract class PropertyInterface {
     createReservationDto: CreateReservationDto,
     userId: string,
   ): Promise<void>;
+  abstract getMyReservations(userId: string): Promise<ReservationDto[]>;
 }
