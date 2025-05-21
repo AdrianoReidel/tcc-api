@@ -10,6 +10,7 @@ import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
 import { ReservationDto } from './dtos/reservation.dto';
 import { CreateRatingDto } from './dtos/create-property-rating.dto';
+import { ReviewResponseDto } from './dtos/review-response.dto';
 
 @Injectable()
 export class PropertyService implements PropertyInterface {
@@ -147,7 +148,7 @@ export class PropertyService implements PropertyInterface {
             status: {
               not: 'CANCELED', // Desconsiderar reservas canceladas
             },
-          }
+          },
         },
       },
     });
@@ -349,7 +350,11 @@ export class PropertyService implements PropertyInterface {
     }));
   }
 
-  async reserveProperty(propertyId: string, createReservationDto: CreateReservationDto, guestId: string): Promise<void> {
+  async reserveProperty(
+    propertyId: string,
+    createReservationDto: CreateReservationDto,
+    guestId: string,
+  ): Promise<void> {
     // Verificar se a propriedade existe
     const property = await this.prisma.property.findUnique({
       where: { id: propertyId },
@@ -462,6 +467,56 @@ export class PropertyService implements PropertyInterface {
       selectedTime: reservation.selectedTime,
       totalPrice: reservation.totalPrice.toNumber(),
       status: reservation.status,
+    }));
+  }
+
+  async getPropertyReviews(propertyId: string): Promise<ReviewResponseDto[]> {
+    // Verificar se a propriedade existe
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Propriedade não encontrada.');
+    }
+
+    // Buscar todas as avaliações associadas à propriedade
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        reservation: {
+          propertyId,
+        },
+      },
+      include: {
+        author: {
+          select: {
+            name: true, // Inclui o nome do autor da avaliação
+          },
+        },
+        reservation: {
+          select: {
+            id: true,
+            checkIn: true,
+            checkOut: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc', // Ordena por data de criação, mais recente primeiro
+      },
+    });
+
+    // Formatar a resposta para corresponder ao ReviewResponseDto
+    return reviews.map((review) => ({
+      id: review.id,
+      reservationId: review.reservationId,
+      authorName: review.author.name,
+      rating: review.rating,
+      comment: review.comment,
+      type: review.type,
+      createdAt: review.createdAt,
+      checkIn: review.reservation.checkIn,
+      checkOut: review.reservation.checkOut,
     }));
   }
 }

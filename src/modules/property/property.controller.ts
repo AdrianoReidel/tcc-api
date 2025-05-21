@@ -40,6 +40,7 @@ import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
 import { ReservationDto } from './dtos/reservation.dto';
 import { CreateRatingDto } from './dtos/create-property-rating.dto';
+import { ReviewResponseDto } from './dtos/review-response.dto';
 
 @ApiTags('Property')
 @Controller('property')
@@ -138,15 +139,13 @@ export class PropertyController {
   async getAllProperties(@Query('search') search?: string): Promise<PropertyListDto[]> {
     return this.propertyService.getAllProperties(search);
   }
-  
+
   @UseGuards(JwtAuthGuard)
   @SuccessResponse('Lista de reservas.')
   @ApiOperation({ summary: 'Retorna todas as reservas do usuário logado.' })
   @ApiResponse({ status: 200, description: 'Lista de reservas.' })
   @Get('my-reservations')
-  async getMyReservations(
-    @Req() req: any,
-  ): Promise<ReservationDto[]> {
+  async getMyReservations(@Req() req: any): Promise<ReservationDto[]> {
     return this.propertyService.getMyReservations(req.user.sub);
   }
 
@@ -298,6 +297,25 @@ export class PropertyController {
         throw error;
       }
       throw new Error('Erro ao criar a avaliação.');
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Avaliações retornadas com sucesso.')
+  @ApiOperation({ summary: 'Busca todas as avaliações de uma propriedade.' })
+  @ApiResponse({ status: 200, description: 'Lista de avaliações retornada.', type: [ReviewResponseDto] })
+  @Get(':propertyId/reviews')
+  async getPropertyReviews(@Param('propertyId') propertyId: string): Promise<ReviewResponseDto[]> {
+    if (!propertyId) {
+      throw new NotFoundException('Parâmetro propertyId é obrigatório.');
+    }
+    try {
+      return await this.propertyService.getPropertyReviews(propertyId);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error('Erro ao buscar avaliações.');
     }
   }
 }

@@ -6,6 +6,7 @@ import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
 import { ReservationDto } from './dtos/reservation.dto';
 import { CreateRatingDto } from './dtos/create-property-rating.dto';
+import { ReviewResponseDto } from './dtos/review-response.dto';
 
 export abstract class PropertyInterface {
   abstract createProperty(createPropertyDto: CreatePropertyDto, imageBuffer: Buffer): Promise<void>;
@@ -26,10 +27,7 @@ export abstract class PropertyInterface {
     createReservationDto: CreateReservationDto,
     userId: string,
   ): Promise<void>;
-  abstract createPropertyRating(
-    propertyId: string,
-    createRatingDto: CreateRatingDto,
-    userId: string,
-  ): Promise<void>;
+  abstract createPropertyRating(propertyId: string, createRatingDto: CreateRatingDto, userId: string): Promise<void>;
   abstract getMyReservations(userId: string): Promise<ReservationDto[]>;
+  abstract getPropertyReviews(propertyId: string): Promise<ReviewResponseDto[]>;
 }
