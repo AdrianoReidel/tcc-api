@@ -9,6 +9,7 @@ import { property, property_status, property_type } from '@prisma/client';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
 import { ReservationDto } from './dtos/reservation.dto';
+import { CreateRatingDto } from './dtos/create-property-rating.dto';
 
 @Injectable()
 export class PropertyService implements PropertyInterface {
@@ -397,6 +398,46 @@ export class PropertyService implements PropertyInterface {
         selectedTime: finalSelectedTime,
         totalPrice,
         status: 'PENDING',
+      },
+    });
+  }
+
+  async createPropertyRating(propertyId: string, createRatingDto: CreateRatingDto, userId: string): Promise<void> {
+    // Verificar se a propriedade existe
+    const property = await this.prisma.property.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!property) {
+      throw new NotFoundException('Propriedade não encontrada.');
+    }
+
+    // Verificar se há uma reserva válida para o usuário e a propriedade
+    const reservation = await this.prisma.reservation.findFirst({
+      where: {
+        propertyId,
+        guestId: userId,
+      },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException('Nenhuma reserva encontrada para esta propriedade e usuário.');
+    }
+
+    // Validar a nota (deve estar entre 1 e 5)
+    const { rating, comment, reservationId } = createRatingDto;
+    if (rating < 1 || rating > 5) {
+      throw new Error('A nota deve estar entre 1 e 5.');
+    }
+
+    // Criar a avaliação
+    await this.prisma.review.create({
+      data: {
+        reservationId: reservationId || reservation.id,
+        authorId: userId,
+        rating,
+        comment,
+        type: 'GUEST_TO_HOST',
       },
     });
   }

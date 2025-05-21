@@ -39,6 +39,7 @@ import { Response } from 'express';
 import { PhotoResponseDto } from './dtos/photo-response.dto';
 import { CreateReservationDto } from './dtos/create-reservation.dto';
 import { ReservationDto } from './dtos/reservation.dto';
+import { CreateRatingDto } from './dtos/create-property-rating.dto';
 
 @ApiTags('Property')
 @Controller('property')
@@ -274,6 +275,29 @@ export class PropertyController {
         throw error;
       }
       throw new Error('Erro ao criar a reserva.');
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Avaliação criada com sucesso.')
+  @ApiOperation({ summary: 'Cria uma avaliação para uma propriedade.' })
+  @ApiResponse({ status: 201, description: 'Avaliação criada.' })
+  @Post(':propertyId/rating')
+  async createPropertyRating(
+    @Param('propertyId') propertyId: string,
+    @Body() createRatingDto: CreateRatingDto,
+    @Req() req: any,
+  ): Promise<void> {
+    if (!propertyId) {
+      throw new NotFoundException('Parâmetro propertyId é obrigatório.');
+    }
+    try {
+      await this.propertyService.createPropertyRating(propertyId, createRatingDto, req.user.sub);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error('Erro ao criar a avaliação.');
     }
   }
 }
