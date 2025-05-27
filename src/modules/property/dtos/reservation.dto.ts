@@ -27,4 +27,7 @@ export class ReservationDto {
 
   @ApiProperty({ example: 'PENDING', description: 'Status da reserva (PENDING, PAID, CANCELED)' })
   status: string;
+
+  @ApiProperty({ example: 'UUID', description: 'ID do usuário que fez a reserva' })
+  guestName?: string;
 }

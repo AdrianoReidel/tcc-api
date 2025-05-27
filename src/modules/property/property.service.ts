@@ -234,25 +234,33 @@ export class PropertyService implements PropertyInterface {
     // Verificar se a propriedade existe
     await this.verifyExistingProperty(id);
 
-    // Buscar e deletar todas as reservas associadas à propriedade
-    await this.prisma.reservation.deleteMany({
-      where: { propertyId: id },
-    });
+    // Iniciar uma transação para garantir consistência
+    await this.prisma.$transaction(async (prisma) => {
+      // 1. Excluir registros dependentes (exemplo: avaliações)
+      await prisma.review.deleteMany({
+        where: { reservation: { propertyId: id } },
+      });
 
-    // Buscar todas as fotos associadas à propriedade
-    const photos = await this.prisma.photo.findMany({
-      where: { propertyId: id },
-      select: { id: true }, // Selecionar apenas o ID das fotos
-    });
+      // 2. Excluir todas as reservas associadas à propriedade
+      await prisma.reservation.deleteMany({
+        where: { propertyId: id },
+      });
 
-    // Deletar cada foto usando o método removePhoto
-    for (const photo of photos) {
-      await this.removePhoto(id, photo.id);
-    }
+      // 3. Buscar todas as fotos associadas à propriedade
+      const photos = await prisma.photo.findMany({
+        where: { propertyId: id },
+        select: { id: true },
+      });
 
-    // Após deletar todas as reservas e fotos, deletar a propriedade
-    await this.prisma.property.delete({
-      where: { id },
+      // 4. Deletar cada foto usando o método removePhoto
+      for (const photo of photos) {
+        await this.removePhoto(id, photo.id);
+      }
+
+      // 5. Deletar a propriedade
+      await prisma.property.delete({
+        where: { id },
+      });
     });
   }
 
@@ -467,6 +475,31 @@ export class PropertyService implements PropertyInterface {
       selectedTime: reservation.selectedTime,
       totalPrice: reservation.totalPrice.toNumber(),
       status: reservation.status,
+    }));
+  }
+
+  async getReservationsByPropertyId(propertyId: string): Promise<ReservationDto[]> {
+    const reservations = await this.prisma.reservation.findMany({
+      where: {
+        propertyId,
+      },
+      include: {
+        property: true,
+        guest: true, // Inclui os dados do hóspede para obter o nome
+      },
+    });
+
+    return reservations.map((reservation) => ({
+      id: reservation.id,
+      propertyId: reservation.propertyId,
+      propertyTitle: reservation.property.title,
+      propertyType: reservation.property.type,
+      checkIn: reservation.checkIn,
+      checkOut: reservation.checkOut,
+      selectedTime: reservation.selectedTime,
+      totalPrice: reservation.totalPrice.toNumber(),
+      status: reservation.status,
+      guestName: reservation.guest.name,
     }));
   }
 

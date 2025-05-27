@@ -29,5 +29,6 @@ export abstract class PropertyInterface {
   ): Promise<void>;
   abstract createPropertyRating(propertyId: string, createRatingDto: CreateRatingDto, userId: string): Promise<void>;
   abstract getMyReservations(userId: string): Promise<ReservationDto[]>;
+  abstract getReservationsByPropertyId(propertyId: string): Promise<ReservationDto[]>;
   abstract getPropertyReviews(propertyId: string): Promise<ReviewResponseDto[]>;
 }

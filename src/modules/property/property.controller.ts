@@ -149,6 +149,15 @@ export class PropertyController {
     return this.propertyService.getMyReservations(req.user.sub);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Lista de reservas da propriedade.')
+  @ApiOperation({ summary: 'Retorna todas as reservas de uma propriedade específica.' })
+  @ApiResponse({ status: 200, description: 'Lista de reservas da propriedade.' })
+  @Get(':propertyId/reservations')
+  async getReservationsByPropertyId(@Param('propertyId') propertyId: string): Promise<ReservationDto[]> {
+    return this.propertyService.getReservationsByPropertyId(propertyId);
+  }
+
   @Get('photos/:photoId')
   @ApiOperation({ summary: 'Retorna os dados da imagem pelo photoId.' })
   @ApiResponse({ status: 200, description: 'Dados binários da imagem.' })
