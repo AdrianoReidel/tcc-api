@@ -29,5 +29,8 @@ export class ReservationDto {
   status: string;
 
   @ApiProperty({ example: 'UUID', description: 'ID do usuário que fez a reserva' })
+  guestId?: string;
+
+  @ApiProperty({ example: 'Nome do Hóspede', description: 'Nome do usuário que fez a reserva' })
   guestName?: string;
 }

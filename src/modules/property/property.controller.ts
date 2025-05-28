@@ -310,6 +310,29 @@ export class PropertyController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @SuccessResponse('Avaliação criada com sucesso.')
+  @ApiOperation({ summary: 'Cria uma avaliação para uma propriedade.' })
+  @ApiResponse({ status: 201, description: 'Avaliação criada.' })
+  @Post(':guestId/ratingGuest')
+  async createGuestRating(
+    @Param('guestId') guestId: string,
+    @Body() createRatingDto: CreateRatingDto,
+    @Req() req: any,
+  ): Promise<void> {
+    if (!guestId) {
+      throw new NotFoundException('Parâmetro guestId é obrigatório.');
+    }
+    try {
+      await this.propertyService.createGuestRating(guestId, createRatingDto.propertyId, createRatingDto, req.user.sub);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error('Erro ao criar a avaliação.');
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Avaliações retornadas com sucesso.')
   @ApiOperation({ summary: 'Busca todas as avaliações de uma propriedade.' })
   @ApiResponse({ status: 200, description: 'Lista de avaliações retornada.', type: [ReviewResponseDto] })

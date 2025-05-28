@@ -455,6 +455,51 @@ export class PropertyService implements PropertyInterface {
     });
   }
 
+  async createGuestRating(
+    guestId: string,
+    propertyId: string,
+    createRatingDto: CreateRatingDto,
+    userId: string,
+  ): Promise<void> {
+    // Verificar se o usuário existe
+    const app_user = await this.prisma.app_user.findUnique({
+      where: { id: guestId },
+    });
+
+    if (!app_user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    // Verificar se há uma reserva válida para o usuário e a propriedade
+    const reservation = await this.prisma.reservation.findFirst({
+      where: {
+        propertyId: propertyId,
+        guestId: guestId,
+      },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException('Nenhuma reserva encontrada para esta propriedade e usuário.');
+    }
+
+    // Validar a nota (deve estar entre 1 e 5)
+    const { rating, comment, reservationId } = createRatingDto;
+    if (rating < 1 || rating > 5) {
+      throw new Error('A nota deve estar entre 1 e 5.');
+    }
+
+    // Criar a avaliação
+    await this.prisma.review.create({
+      data: {
+        reservationId: reservationId || reservation.id,
+        authorId: userId,
+        rating,
+        comment,
+        type: 'HOST_TO_GUEST',
+      },
+    });
+  }
+
   async getMyReservations(guestId: string): Promise<ReservationDto[]> {
     const reservations = await this.prisma.reservation.findMany({
       where: {
@@ -500,6 +545,7 @@ export class PropertyService implements PropertyInterface {
       totalPrice: reservation.totalPrice.toNumber(),
       status: reservation.status,
       guestName: reservation.guest.name,
+      guestId: reservation.guest.id,
     }));
   }
 

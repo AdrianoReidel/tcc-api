@@ -16,4 +16,14 @@ export class CreateRatingDto {
   @IsOptional()
   @IsString()
   reservationId?: string;
+
+  @ApiProperty({ description: 'ID do usuário que está sendo avaliado', example: '67890' })
+  @IsString()
+  @IsOptional()
+  guestId?: string;
+
+  @ApiProperty({ description: 'ID da propriedade que está sendo avaliada', example: '12345' })
+  @IsString()
+  @IsOptional()
+  propertyId?: string;
 }
