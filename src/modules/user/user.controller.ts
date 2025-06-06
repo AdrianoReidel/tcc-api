@@ -68,12 +68,13 @@ export class UserController {
     await this.userService.updateUser(id, body);
   }
 
-  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  @UseGuards(JwtAuthGuard)
   @SuccessResponse('Usuário deletado.')
   @ApiOperation({ summary: 'Deleta o usuário' })
   @ApiResponse({ status: 200, description: 'Usuário deletado.' })
-  @Delete(':id')
-  async deleteUser(@Param('id') id: string): Promise<void> {
+  @Delete()
+  async deleteUser(@Request() req): Promise<void> {
+    const id = req.user.sub
     await this.userService.deleteUser(id);
   }
 }
