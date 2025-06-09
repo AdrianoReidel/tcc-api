@@ -16,6 +16,37 @@ export class AuthService implements AuthInterface {
     private readonly prisma: PrismaService,
   ) {}
 
+  async login(user: UserAuthDto): Promise<LoginResponseDto> {
+    const payload = {
+      email: user.email,
+      sub: user.id,
+      name: user.name,
+      role: user.role,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<string> {
+    try {
+      const payload = this.jwtService.verify(refreshToken);
+      const access_token = {
+        email: payload.email,
+        sub: payload.sub,
+      };
+      return this.jwtService.sign(access_token, { expiresIn: '60m' });
+    } catch (error) {
+      throw new UnauthorizedException('Refresh token inválido.');
+    }
+  }
+
   async validateUser(email: string, password: string): Promise<UserAuthDto> {
     const user = await this.prisma.app_user.findUnique({
       where: { email },
@@ -40,24 +71,6 @@ export class AuthService implements AuthInterface {
       select: { status: true },
     });
     return user;
-  }
-
-  async login(user: UserAuthDto): Promise<LoginResponseDto> {
-    const payload = {
-      email: user.email,
-      sub: user.id,
-      name: user.name,
-      role: user.role,
-    };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
-      userId: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
   }
 
   async register(user: CreateUserDto): Promise<void> {
@@ -88,19 +101,6 @@ export class AuthService implements AuthInterface {
     await this.prisma.app_user.create({
       data: user,
     });
-  }
-
-  async refresh(refreshToken: string): Promise<string> {
-    try {
-      const payload = this.jwtService.verify(refreshToken);
-      const access_token = {
-        email: payload.email,
-        sub: payload.sub,
-      };
-      return this.jwtService.sign(access_token, { expiresIn: '60m' });
-    } catch (error) {
-      throw new UnauthorizedException('Refresh token inválido.');
-    }
   }
 
   async check(access_token: string): Promise<boolean> {
