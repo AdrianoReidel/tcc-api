@@ -29,16 +29,10 @@ export class AuthController {
   @Post('login')
   @ApiOperation({ summary: 'Login de usuário' })
   @ApiBody({ type: LoginUserDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Login realizado com sucesso.',
-    type: LoginResponseDto,
-  })
+  @ApiResponse({ status: 201, description: 'Login realizado com sucesso.', type: LoginResponseDto })
   async login(@Request() req: any, @Res() res: any): Promise<LoginResponseDto> {
     console.log('Login:', req.user);
-
     const tokens = await this.authService.login(req.user);
-
     res.cookie('access_token', tokens.access_token, {
       httpOnly: true,
       secure: true,
@@ -46,7 +40,6 @@ export class AuthController {
       maxAge: 1 * 60 * 60 * 1000, // 1 hora
       path: '/',
     });
-
     res.cookie('refresh_token', tokens.refresh_token, {
       httpOnly: true,
       secure: true,
@@ -54,7 +47,6 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
       path: '/',
     });
-
     return res.status(200).send(tokens);
   }
 
@@ -62,13 +54,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Atualiza o token de acesso' })
   async refresh(@Req() req: any, @Res() res: any) {
     const refreshToken = req.cookies['refresh_token'];
-
     if (!refreshToken) {
       res.clearCookie('access_token');
       res.clearCookie('refresh_token');
       throw new BadRequestException('Refresh token não encontrado.');
     }
-
     try {
       const newAccessToken = await this.authService.refresh(refreshToken);
       res.cookie('access_token', newAccessToken, {
